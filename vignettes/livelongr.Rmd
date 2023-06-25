@@ -1,0 +1,181 @@
+---
+title: "livelongr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{livelongr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(livelongr)
+library(dplyr)
+```
+
+## Introduction
+
+The `livelongr` R package contains the `health_ineq` dataset and various functions that create useful graphs of interest on the dataset. The `health_ineq` dataset contains race-adjusted and non-race-adjusted life expectancy estimates of Americans by state of residence, year, sex, and income quartile, as well as annual minimum wage data by state. By allowing for analysis of how life expectancy may vary across these factors, this package aims to shed light on health inequalities in America.
+
+Life expectancy data was collected from 2001-2014 by the [Health Inequality Project](https://healthinequality.org/) for use in the [research article](https://jamanetwork.com/journals/jama/article-abstract/2513561) "The Association Between Income and Life Expectancy in the United States, 2001-2014", published in 2016 by The Journal of the American Medical Association. This data was released to the public domain under a CC0 license. 
+
+Minimum wage data was collected from 1968-2023 by the [Federal Reserve Economic Data](https://fredhelp.stlouisfed.org/fred/about/about-fred/what-is-fred/) online database created and maintained by the Research Department at the Federal Reserve Bank of St. Louis, and also made available for public use.
+
+## The livelongr package
+
+This package primarily shares the `health_ineq` dataset. The curated dataset contains 28 columns and 714 rows, with each row representing a state-year combination. A single column represents each of the following four variables: `stateabbrv` or state abbreviation, `Year`, `statename`, and `Min_Wage` or minimum wage. The other 24 columns contain life expectancy estimates by sex (female, male, or both combined) and income quartile, as race-adjusted and non-race-adjusted values. The naming scheme of these columns may be understood using:
+
+```{r}
+glimpse(health_ineq)
+```
+
+As may be deduced from the above, `ra` indicates race-adjusted values and `nr` indicates non-race-adjusted values. `f` represents female estimates, `m` male estimates, and `mixed` averages the female and male estimates. 
+
+This package also contains 2 functions, `wage_le_plot()` and `choropleth()`. The following sections will demonstrate how to use these functions and showcase questions that may be answered using these functions along with the `health_ineq` data.
+
+## Basic Function Overviews
+
+The `wage_le_plot()` function creates a scatterplot of life expectancy by minimum wage for a user-selected income quartile, with the option of limiting analysis to a specific state (or set of staes), year range, and/or sex. The following is a summary of the input parameters:
+
+* `data`: A data frame containing life expectancies by state, year, wealth quartile, and minimum wage
+* `quartile`: The income quartile to filter on (1, 2, 3, or 4)
+* `state`: A state or set of states to filter on (abbreviated state names)
+* `year`: A year or set of years to filter on (optional; default: all years)
+* `sex`: A sex to filter on ("m", "f", or "mixed"; optional; default: mixed)
+
+Here is a basic example of how the `wage_le_plot()` function may be used to explore life expectancy by minimum wage for the second income quartile in Massachusetts and Connecticut from 2005-2010:
+
+```{r}
+wage_le_plot(health_ineq, quartile = 2, state = c("MA", "CT"), year = c(2005, 2006, 2007, 2008, 2009, 2010))
+```
+
+The `choropleth()` function creates a choropleth of race-adjusted or non-race-adjusted life expectancy by state for a user-selected income quartile, sex, and year. The following is a summary of the input parameters: 
+
+* `data`: A data frame containing life expectancies by state, year, wealth quartile, and minimum wage
+* `quartile`: The income quartile to filter on (1, 2, 3, or 4)
+* `sex`: A sex to filter on ("m", "f", or "mixed")
+* `year`: A year to filter on 
+* `ra`: Whether or not to race-adjust life expectancy estimates (TRUE for race-adjusted, FALSE for non; optional; default: TRUE)
+
+Here is a basic example of how the `choropleth()` function may be used to explore race-adjusted life expectancy estimates across different states for males in the 4th quartile in 2014:
+
+```{r}
+choropleth(health_ineq, quartile = 4, sex = "m", year = 2014)
+```
+
+## Example Uses of `livelongr`
+
+The dataset and functions included in livelongr may be used to answer a variety of questions. For example, we might ask, “How has life expectancy varied by minimum wage in Oregon for people with incomes in the third quartile?” This may be answered using the `wage_le_plot()` function:
+
+```{r}
+wage_le_plot(health_ineq, quartile = 3, state = "OR")
+```
+
+We see that there is a fairly clear positive association between minimum wage and life expectancy in Oregon over the years 2001-2014. Then, if we were curious about how this compared to the association between life expectancy and minimum wage among those in the third income quartile in nearby states like California and Washington, we could run the following:
+
+```{r}
+wage_le_plot(health_ineq, quartile = 3, state = c("OR", "CA", "WA"))
+```
+
+We see that across these three states, there is a positive association between minimum wage and life expectancy for those with incomes in the third quartile. One might note that for a given minimum wage, life expectancy tends to be higher for those living in Oregon than in Washington. We can also observe that there is some “stacking” of points for Californians where minimum wage did not change between years but life expectancy did; this might suggest that factors besides minimum wage are better predictors of life expectancy, at least for this specific case in California. 
+
+
+Using `choropleth()`: 
+
+We may use `choropleth()` to show changes in race-adjusted life expectancy over time for individuals of both sexes in the poorest income quartile. Here, the time interval is every 4 years from 2002 to 2014:
+
+```{r}
+choropleth(health_ineq, quartile = 1, sex = "f", year = 2002)
+choropleth(health_ineq, quartile = 1, sex = "f", year = 2006)
+choropleth(health_ineq, quartile = 1, sex = "f", year = 2010)
+choropleth(health_ineq, quartile = 1, sex = "f", year = 2014)
+```
+
+Here, a noticeable trend occurs. That is, from 2002 to 2014, it seems that race-adjusted life expectancy estimates for females in quartile 1 has been increasing in the Northwest region such that is is higher relative to other states. This is shown with the Northwest region getting darker shades of green over the years. Additionally, Alaska remains one of the top contenders for the highest life expectancy across the other 49 states in the 12 year span. Moving to Alaska may perhaps increase your life expectancy! :)
+
+The highly useful spatial visualization of life expectancy data across states generated by `choropleth()` could help answer research questions like whether or not variation in life expectancy between states for a specific sex and income may be explained by geographic region (ie, if certain broader geographic areas in the United States tend to have higher or lower life expectancy estimates); these types of geographic patterns are not as clear or easily observable when data is presented in other formats, such as tables or non-spatial graphs. 
+
+For example, consider how the `choropleth()` function may be used to explore race-adjusted life expectancy estimates across different states for males in the 2nd income quartile in 2002:
+
+```{r}
+choropleth(health_ineq, quartile = 2, sex = "m", year = 2002)
+```
+
+Here, the choropleth visualization allows us to see that Nevada is a regional “outlier” of sorts; that is, its particularly low life expectancy cannot be explained by its geographic region, as its neighboring states do not have particularly low life expectancy estimates, which may suggest that something specific to Nevada, perhaps some sort of health policy, may have negatively affected the health outcomes of its second quartile male residents in 2002.
+
+
+When used together, the `wage_le_plot()` and `choropleth()` functions allow for analysis of a wide range of problems related to life expectancy and its variation across different groups. Say, for example, we want to find whether there may be associations between minimum wage and race-adjusted life expectancy for states with particularly high or low life expectancy estimates among females in quartile 1 in 2012. We can do it in two steps: 
+
+1) Use `choropleth()` to plot life expectancy across the states and pick the states that stand out to you and/or states with the highest and lowest life expectancy estimates: 
+
+```{r}
+choropleth(health_ineq, 1, "f", 2012)
+```
+
+From the choropleth graph above, we see Idaho colored the darkest with a life expectancy estimate of 86.74 years and then Montana, Utah and California with 84.94, 84.49, and 84.42 years, respectively. States with the lightest shade of green include Alaska, North Dakota, Iowa with 80.25, 80.59, and 81.05 years.
+
+2) Use `wage_le_plot()` to plot the relationship between minimum wage and life expectancy estimates for the states you have selected. 
+
+All selected states
+```{r}
+wage_le_plot(health_ineq, 1, state = c("ID", "MT", "UT", "CA", "AK", "ND", "IA", "IN"), year = 2012, sex = "f" )
+```
+
+Selected states with high life expectancies
+```{r}
+wage_le_plot(health_ineq, 1, state = c("ID", "MT", "UT", "CA"), year = 2012, sex = "f" )
+```
+
+
+Selected states with the low life expectancies
+```{r}
+wage_le_plot(health_ineq, 1, state = c("AK", "ND", "IA", "IN"), year = 2012, sex = "f" )
+```
+
+From this visual analysis, we do not see a straightforward relationship between minimum wage and race-adjusted life expectancy for the states we have selected for females in quartile 1 in 2012. However, it is interesting that the life expectancy and minimum wage plot for the selected states at ~7.25 dollars have varying life expectancies that range from 80 to 87. And more importantly, it is important to note that there are other confounding variables that affect life expectancy, including age, smoking, exercise. 
+
+
+Examples of how the `health_ineq` dataset can be used with other packages to answer questions:
+
+1. Using `dplyr` to answer: In the wealthiest income quartile in 2014, what were the top 10 states with the highest life expectancy across males and females combined? 
+```{r}
+library(dplyr)
+data <- health_ineq %>% 
+  select(stateabbrv, statename, Year, ra_q4_mixed, Min_Wage) %>% 
+  filter(Year == 2014)
+sorted <- arrange(data, desc(ra_q4_mixed))
+top_10 <- top_n(sorted, n = 10, wt = ra_q4_mixed)
+top_10
+```
+
+Among males and females in the top income quartile in 2014, the top 10 states all had an estimated life expectancy of 89+ years. Maine had the highest life expectancy of nearly 91 years. 
+
+
+2. Using `dplyr` to data wrangle and `ggplot2` to visualize: Among males in Quartile 1, what is the Life expectancy of Florida, Massachusetts, California, Texas, and Kansas from 2001 to 2014?
+```{r}
+library(dplyr)
+library(ggplot2)
+
+data <- health_ineq %>% 
+  filter(statename %in% c("Florida", "Massachusetts", "California", "Texas", "Kansas")) %>% 
+  select(stateabbrv, statename, Year, ra_q1_m)
+
+p <- ggplot(data, mapping = aes(x = Year, y = ra_q1_m, color = statename)) +
+  geom_line() + 
+  labs(title = "Life Expectancy Estimate for Males in Quartile 1 (Poorest)", 
+       y = ("Life Expectancy in Years")) + 
+  theme_classic() + 
+  scale_x_continuous(breaks = pretty(range(data$Year), n = 5))
+
+p
+```
+
+The line graph shows California and Florida having an upwards trend in life expectancy for males in quartile 1 from 2001 to 2014. Of the 5 states, Kansas's life expectancy line is interesting because it drops by ~3 years in 2008, following the housing crisis and remains at ~74 years from 2009 to 2011. Then it slowly increases to previous levels of 77 years of life expectancy. This leads to questions such as "What caused the sudden drop in 2008? Could it be due to low-income/poor males emigrating to other states, or a sudden influx of poor males from nearby states? Or could it be increase in unemployment leading to many poor males forgoing healthcare and thus putting them at greater health risks?
+
+
